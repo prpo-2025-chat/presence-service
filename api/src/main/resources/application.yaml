@@ -4,6 +4,10 @@ spring:
   application:
     name: presence-service
 
+  data:
+    mongodb:
+      uri: mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_CLUSTER}/${MONGO_DATABASE}?retryWrites=true&w=majority&appName=chat-app
+
 encryption-service:
   base-url: http://localhost:8082/encryption
 
