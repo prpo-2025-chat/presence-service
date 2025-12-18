@@ -1,6 +1,6 @@
 package com.prpo.chat.presence.service;
 
-import java.util.Date;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,42 +20,44 @@ public class PresenceService {
     }
 
     public Optional<Presence> getPresence(String userId) {
-        return presenceRepository.findByUserId(userId);
+        return presenceRepository.findById(userId);
     }
 
     public Presence setOnline(String userId) {
-        Presence presence = presenceRepository.findByUserId(userId)
+        Presence presence = presenceRepository.findById(userId)
             .orElse(new Presence(userId));
         
         presence.setStatus(PresenceStatus.ONLINE);
+        presence.refreshTtl();
         return presenceRepository.save(presence);
     }
 
     public Presence setOffline(String userId) {
-        Presence presence = presenceRepository.findByUserId(userId)
+        Presence presence = presenceRepository.findById(userId)
             .orElse(new Presence(userId));
         
         presence.setStatus(PresenceStatus.OFFLINE);
+        presence.refreshTtl();
         return presenceRepository.save(presence);
     }
 
     public List<Presence> getBulkPresence(List<String> userIds) {
-        return presenceRepository.findByUserIdIn(userIds);
+        List<Presence> results = new ArrayList<>();
+        for (String userId : userIds) {
+            presenceRepository.findById(userId).ifPresent(results::add);
+        }
+        return results;
     }
 
     public List<Presence> getAllPresence() {
-        return presenceRepository.findAll();
+        List<Presence> results = new ArrayList<>();
+        presenceRepository.findAll().forEach(p -> {
+            if (p != null) results.add(p);
+        });
+        return results;
     }
 
-    public void cleanupInactiveUsers(long inactivityMinutes) {
-        Date cutoff = new Date(System.currentTimeMillis() - (inactivityMinutes * 60 * 1000));
-        
-        List<Presence> inactiveUsers = presenceRepository
-            .findByStatusAndLastSeenBefore(PresenceStatus.ONLINE, cutoff);
-        
-        for (Presence presence : inactiveUsers) {
-            presence.setStatus(PresenceStatus.OFFLINE);
-            presenceRepository.save(presence);
-        }
+    public List<Presence> getOnlineUsers() {
+        return presenceRepository.findByStatus(PresenceStatus.ONLINE);
     }
 }
